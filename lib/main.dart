@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // jsonEncode(map); jsonDecode(String)
 
 void main() {
   runApp(const MyApp()); // Запуск древа FlutterUI
@@ -10,6 +11,19 @@ class Task {
   bool isDone;
 
   Task({required this.title, this.isDone = false});
+  
+  Map<String, dynamic> toMap() { // Map<keyType, valueType> name() =>
+    return {
+      'title': title,
+      'isDone': isDone
+    };
+  }
+
+  factory Task.fromMap(Map<String, dynamic> map){ 
+    return Task(
+      title: map['title'], 
+      isDone: map['isDone']);
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -49,10 +63,15 @@ class _TaskPageState extends State<TaskPage> {
   //   });
   // }
 
-  // Future<void> _saveTasks() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   await prefs.setStringList('tasks', tasks);
-  // }
+  Future<void> _saveTasks() async {
+    final prefs = await SharedPreferences.getInstance(); // Об
+    List<String> stringTasks = tasks.map((task) {
+      final String data = json.encode(task.toMap());
+      return data;
+    }).toList();
+
+    await prefs.setStringList('tasks', stringTasks);
+  }
 
   void _deleteTask(int index) {
     setState(() {
