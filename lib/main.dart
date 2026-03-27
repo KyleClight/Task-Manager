@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert'; // jsonEncode(map); jsonDecode(String)
 
 void main() {
-  runApp(const MyApp()); // Запуск древа FlutterUI
+  runApp(const TaskManagerApp()); // Запуск древа FlutterUI
 }
 
 class Task {
@@ -26,12 +26,19 @@ class Task {
   }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class TaskManagerApp extends StatelessWidget {
+  const TaskManagerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: "Task Manager", home: const TaskPage());
+    return MaterialApp(
+      title: "Task Manager",
+      theme: ThemeData(
+        scaffoldBackgroundColor: const Color.fromARGB(255, 221, 182, 255),
+        primarySwatch: Colors.deepPurple, // Поле для дефолтного цвета приложения
+      ),
+      home: const TaskPage()
+    );      
   }
 }
 
@@ -51,20 +58,22 @@ class _TaskPageState extends State<TaskPage> {
   void initState() {
     // Состояние, вызываемое при первой компиляции приложения
     super.initState();
-    // loadTasks();
+    loadTasks();
   }
   
-  // Future<void> loadTasks() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final loadedTasks = prefs.getStringList('tasks') ?? [];
-  //   tasks = loadedTasks;
-  //   setState(() {
-  //     tasks = loadedTasks;
-  //   });
-  // }
+  Future<void> loadTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> rawData = prefs.getStringList('tasks') ?? [];
+    setState(() {
+      tasks = rawData.map((item) {
+        Map<String, dynamic> map = jsonDecode(item); // Превращает из JSON в Map<String, dynamic>
+        return Task.fromMap(map);
+      }).toList();
+    });
+  }
 
   Future<void> _saveTasks() async {
-    final prefs = await SharedPreferences.getInstance(); // Об
+    final prefs = await SharedPreferences.getInstance();
     List<String> stringTasks = tasks.map((task) {
       final String data = json.encode(task.toMap());
       return data;
@@ -77,12 +86,12 @@ class _TaskPageState extends State<TaskPage> {
     setState(() {
       tasks.removeAt(index);
     });
-    // _saveTasks();
+    _saveTasks();
   }
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Scaffold( 
       body: Column(
         children: [
           SafeArea(
@@ -103,10 +112,10 @@ class _TaskPageState extends State<TaskPage> {
                 onPressed: () {
                   if (controller.text.isNotEmpty) {
                     setState(() {
-                      tasks.add(Task(title: controller.text));
+                      tasks.add(Task(title: controller.text, isDone: false));
                       controller.clear();
                     });
-                    // _saveTasks();
+                    _saveTasks();
                   }
                 },
                 child: Text('Add'),
@@ -127,6 +136,7 @@ class _TaskPageState extends State<TaskPage> {
                     setState(() {
                       tasks[index].isDone = newValue ?? false;
                     });
+                    _saveTasks();
                   }),
                   title: Text(
                     task,
